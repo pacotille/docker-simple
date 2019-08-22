@@ -1,0 +1,59 @@
+apiVersion: v1
+metadata:
+  name: hello-web
+  namespace: default
+kind: ConfigMap
+data:
+  greeting: hello
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+  app: hello-web
+  name: hello-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-web
+  template:
+    metadata:
+      labels:
+        app: hello-web
+    spec:
+      containers:
+      - image : registry.hub.docker.com/jblaskowich/hello:v1
+        name: hello-web
+        env:
+          - name : GREETING
+            valueFrom:
+              configMapKeyRef:
+                name: hello-web
+                key: greeting
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: hello-web
+spec:
+  selector:
+    app: hello-web
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: extension/v1beta1
+kind: Ingress
+metadata:
+  name: hello-web
+spec:
+  rules:
+  - host: hello.192.168.99.100.xip.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: hello-web
+          servicePort: 80
